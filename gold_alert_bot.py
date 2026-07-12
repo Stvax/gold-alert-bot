@@ -75,6 +75,8 @@ def atr(df, length):
 def main():
     # --- Previous day high/low ---
     daily = yf.download(TICKER, period="10d", interval="1d", progress=False)
+    if isinstance(daily.columns, pd.MultiIndex):
+        daily.columns = daily.columns.get_level_values(0)
     if len(daily) < 2:
         print("Not enough daily data returned - try again shortly.")
         return
@@ -83,6 +85,8 @@ def main():
 
     # --- Intraday data ---
     intraday = yf.download(TICKER, period="5d", interval=INTERVAL, progress=False)
+    if isinstance(intraday.columns, pd.MultiIndex):
+        intraday.columns = intraday.columns.get_level_values(0)
     if len(intraday) < EMA_SLOW + 5:
         print("Not enough intraday data returned - try again shortly.")
         return
