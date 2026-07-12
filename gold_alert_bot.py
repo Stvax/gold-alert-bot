@@ -126,12 +126,18 @@ def main():
 
     close = float(last["Close"])
     atr_val = float(last["atr"])
+    candle_dt = last.name
+    if candle_dt.tzinfo is None:
+        candle_dt = candle_dt.tz_localize("UTC")
+    candle_dt_az = candle_dt.tz_convert("America/Phoenix")
+    candle_time = candle_dt_az.strftime("%Y-%m-%d %I:%M %p %Z")
 
     if long_breakout and long_score >= MIN_CONFIDENCE:
         stop = close - atr_val * ATR_STOP_MULT
         target = close + atr_val * ATR_STOP_MULT * RR_RATIO
         msg = (
             f"\U0001F7E2 GOLD LONG breakout\n"
+            f"Candle: {candle_time}\n"
             f"Entry: {close:.2f}\nStop: {stop:.2f}\nTarget: {target:.2f}\n"
             f"Confidence: {long_score}%\nRSI: {last['rsi']:.1f}"
         )
@@ -143,6 +149,7 @@ def main():
         target = close - atr_val * ATR_STOP_MULT * RR_RATIO
         msg = (
             f"\U0001F534 GOLD SHORT breakout\n"
+            f"Candle: {candle_time}\n"
             f"Entry: {close:.2f}\nStop: {stop:.2f}\nTarget: {target:.2f}\n"
             f"Confidence: {short_score}%\nRSI: {last['rsi']:.1f}"
         )
