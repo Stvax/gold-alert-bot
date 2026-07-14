@@ -5,10 +5,6 @@ Standalone script (no TradingView needed) that checks gold (GC=F) 15-minute
 price data for a previous-day-high/low breakout with volume, trend, and
 momentum confirmation, and sends a Telegram message when the confluence
 score crosses the configured threshold.
-
-Designed to be run periodically (e.g. every 15 minutes) by a scheduler
-such as GitHub Actions, cron, or Task Scheduler. Each run only checks the
-most recently completed candle, so no state needs to be saved between runs.
 """
 
 import os
@@ -72,14 +68,17 @@ def atr(df, length):
     return tr.ewm(alpha=1 / length, adjust=False).mean()
 
 
-def main():
+def check_signal(test_mode=False):
+    if test_mode:
+        send_telegram("\u2705 Test message - your Gold Alert Bot is connected and working correctly!")
+        return "Test message sent."
+
     # --- Previous day high/low ---
     daily = yf.download(TICKER, period="10d", interval="1d", progress=False)
     if isinstance(daily.columns, pd.MultiIndex):
         daily.columns = daily.columns.get_level_values(0)
     if len(daily) < 2:
-        print("Not enough daily data returned - try again shortly.")
-        return
+        return "Not enough daily data returned - try again shortly."
     pdh = float(daily["High"].iloc[-2])
     pdl = float(daily["Low"].iloc[-2])
 
@@ -88,8 +87,7 @@ def main():
     if isinstance(intraday.columns, pd.MultiIndex):
         intraday.columns = intraday.columns.get_level_values(0)
     if len(intraday) < EMA_SLOW + 5:
-        print("Not enough intraday data returned - try again shortly.")
-        return
+        return "Not enough intraday data returned - try again shortly."
 
     df = intraday.copy()
     df["ema_fast"] = ema(df["Close"], EMA_FAST)
@@ -142,7 +140,7 @@ def main():
             f"Confidence: {long_score}%\nRSI: {last['rsi']:.1f}"
         )
         send_telegram(msg)
-        print(msg)
+        return msg
 
     elif short_breakout and short_score >= MIN_CONFIDENCE:
         stop = close + atr_val * ATR_STOP_MULT
@@ -154,11 +152,12 @@ def main():
             f"Confidence: {short_score}%\nRSI: {last['rsi']:.1f}"
         )
         send_telegram(msg)
-        print(msg)
+        return msg
 
     else:
-        print(f"No signal this run. Long score: {long_score}%, Short score: {short_score}%, RSI: {last['rsi']:.1f}")
+        return f"No signal this run. Long score: {long_score}%, Short score: {short_score}%, RSI: {last['rsi']:.1f}"
 
 
 if __name__ == "__main__":
-    main()
+    test_mode = os.environ.get("TEST_MODE", "").lower() == "true"
+    print(check_signal(test_mode))
