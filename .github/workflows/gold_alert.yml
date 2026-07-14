@@ -1,9 +1,13 @@
 name: Gold Breakout Alert
 
 on:
-  schedule:
-    - cron: "2,7,12,17,22,27,32,37,42,47,52,57 * * * *"
   workflow_dispatch:
+    inputs:
+      test:
+        description: "Send a test Telegram message instead of checking for a real signal"
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   check-signal:
@@ -18,3 +22,4 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TEST_MODE: ${{ github.event.inputs.test }}
